@@ -679,6 +679,11 @@
     <script>
         AOS.init({ once: true, offset: 50, duration: 800 });
 
+        const popup = document.getElementById('popup-captura');
+        const form = document.getElementById('form-webinar-mateus');
+        const popupFormBody = document.getElementById('popup-form-body');
+        const popupFormSuccess = document.getElementById('popup-form-success');
+
         const CONFIG = {
             webhook: form.dataset.webhook || 'https://hook.us2.make.com/6qaglponybteo2l6d187c5p91i7r1tae?produto=w-lex',
             redirect: form.dataset.redirect || 'https://sndflw.com/i/webnar'
@@ -687,11 +692,6 @@
         function isConfiguredUrl(url) {
             return Boolean(url && !/SEU_|placeholder|example\.com/i.test(url));
         }
-
-        const popup = document.getElementById('popup-captura');
-        const form = document.getElementById('form-webinar-mateus');
-        const popupFormBody = document.getElementById('popup-form-body');
-        const popupFormSuccess = document.getElementById('popup-form-success');
 
         function abrirPopup() {
             resetarPopup();
