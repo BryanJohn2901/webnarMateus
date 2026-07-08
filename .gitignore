@@ -4,3 +4,5 @@
 .env
 .env.*
 node_modules/
+.build-custom.css
+.build-tailwind.css
