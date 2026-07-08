@@ -13,6 +13,9 @@
     <meta property="og:locale" content="pt_BR">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%8E%A4</text></svg>">
 
+    <script async src="https://www.dashmonster.com.br/api/tracking/pixel.js?via=proxy"></script>
+    <script>window.dmq=window.dmq||[];dmq.push(["init","matheus-ribeiro-a-nova-ordem-3hh33","4dadb4453055"]);</script>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -634,7 +637,7 @@
                 <p class="text-sm text-brand-textSecondary">Preencha os dados para garantir sua vaga na aula de terça-feira, 14/07 às 20h.</p>
             </div>
 
-            <form id="form-webinar-mateus" class="space-y-4 mt-6 popup-form">
+            <form id="form-webinar-mateus" class="space-y-4 mt-6 popup-form" data-redirect="https://sndflw.com/i/webnar" data-webhook="https://hook.us2.make.com/6qaglponybteo2l6d187c5p91i7r1tae?produto=w-lex">
                 <input type="hidden" id="utm_source" name="utm_source" value="">
                 <input type="hidden" id="utm_term" name="utm_term" value="">
                 <input type="hidden" id="utm_campaign" name="utm_campaign" value="">
@@ -677,8 +680,8 @@
         AOS.init({ once: true, offset: 50, duration: 800 });
 
         const CONFIG = {
-            webhook: 'https://hook.us2.make.com/6qaglponybteo2l6d187c5p91i7r1tae?produto=w-lex',
-            redirect: 'https://SEU_LINK_DE_REDIRECIONAMENTO_AQUI'
+            webhook: form.dataset.webhook || 'https://hook.us2.make.com/6qaglponybteo2l6d187c5p91i7r1tae?produto=w-lex',
+            redirect: form.dataset.redirect || 'https://sndflw.com/i/webnar'
         };
 
         function isConfiguredUrl(url) {
@@ -737,14 +740,6 @@
 
         preencherCamposTracking();
 
-        function buildRedirectUrl(base, data) {
-            const url = new URL(base, window.location.origin);
-            Object.entries(data).forEach(([key, value]) => {
-                if (value) url.searchParams.set(key, value);
-            });
-            return url.toString();
-        }
-
         const telInput = form.querySelector('.mask-telefone');
         telInput.addEventListener('input', function(e) {
             let value = e.target.value.replace(/\D/g, '');
@@ -757,7 +752,7 @@
             form.querySelector('.error-msg').classList.add('hidden');
         });
 
-        form.addEventListener('submit', async function(e) {
+        form.addEventListener('submit', function(e) {
             e.preventDefault();
             const btnSubmit = form.querySelector('.btn-submit');
             const errorMsg = form.querySelector('.error-msg');
@@ -790,29 +785,18 @@
                 produto: 'w-lex'
             };
 
-            const redirectData = { ...payload };
-            const webhookAtivo = isConfiguredUrl(CONFIG.webhook);
-            const redirectAtivo = isConfiguredUrl(CONFIG.redirect);
-
-            try {
-                if (webhookAtivo) {
-                    await fetch(CONFIG.webhook, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload),
-                        keepalive: true
-                    });
-                }
-            } catch (err) {
-                console.error('Erro no envio do Webhook. Prosseguindo com fallback.', err);
+            if (CONFIG.webhook) {
+                fetch(CONFIG.webhook, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                    keepalive: true
+                }).catch((err) => {
+                    console.error('Erro no envio do Webhook. Prosseguindo com redirect.', err);
+                });
             }
 
-            if (redirectAtivo) {
-                window.location.href = buildRedirectUrl(CONFIG.redirect, redirectData);
-                return;
-            }
-
-            mostrarSucessoPopup();
+            window.location.href = CONFIG.redirect;
         });
 
         if (window.matchMedia('(min-width: 1024px)').matches) {
