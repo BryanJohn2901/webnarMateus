@@ -637,13 +637,13 @@
                 <p class="text-sm text-brand-textSecondary">Preencha os dados para garantir sua vaga na aula de terça-feira, 14/07 às 20h.</p>
             </div>
 
-            <form id="form-webinar-mateus" class="space-y-4 mt-6 popup-form" data-redirect="https://sndflw.com/i/webnar" data-webhook="https://hook.us2.make.com/6qaglponybteo2l6d187c5p91i7r1tae?produto=w-lex">
-                <input type="hidden" id="utm_source" name="utm_source" value="">
-                <input type="hidden" id="utm_term" name="utm_term" value="">
-                <input type="hidden" id="utm_campaign" name="utm_campaign" value="">
-                <input type="hidden" id="utm_medium" name="utm_medium" value="">
-                <input type="hidden" id="utm_content" name="utm_content" value="">
-                <input type="hidden" id="url" name="url" value="">
+            <form id="form-webinar-mateus" class="space-y-4 mt-6 popup-form" method="post" action="#" onsubmit="event.preventDefault();" data-redirect="https://sndflw.com/i/webnar" data-webhook="https://hook.us2.make.com/6qaglponybteo2l6d187c5p91i7r1tae?produto=w-lex">
+                <input type="hidden" id="utm_source" value="">
+                <input type="hidden" id="utm_term" value="">
+                <input type="hidden" id="utm_campaign" value="">
+                <input type="hidden" id="utm_medium" value="">
+                <input type="hidden" id="utm_content" value="">
+                <input type="hidden" id="url" value="">
                 <div id="popup-form-body">
                 <div>
                     <label for="lead-nome" class="block text-sm font-medium text-gray-300 mb-1">Nome</label>
@@ -661,7 +661,7 @@
                     </div>
                     <p class="error-msg text-red-400 text-xs mt-1 hidden">Informe o DDD e o número completo.</p>
                 </div>
-                <button type="submit" class="btn-submit bg-brand-primary text-brand-bg font-sans hover:shadow-[0_0_20px_rgba(232,184,74,0.6)] transition mt-2">
+                <button type="button" id="btn-submit-lead" class="btn-submit bg-brand-primary text-brand-bg font-sans hover:shadow-[0_0_20px_rgba(232,184,74,0.6)] transition mt-2">
                     Garantir minha vaga
                 </button>
                 </div>
@@ -675,23 +675,16 @@
         </div>
     </div>
 
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script>
-        AOS.init({ once: true, offset: 50, duration: 800 });
+        const REDIRECT_URL = 'https://sndflw.com/i/webnar';
+        const WEBHOOK_URL = 'https://hook.us2.make.com/6qaglponybteo2l6d187c5p91i7r1tae?produto=w-lex';
 
         const popup = document.getElementById('popup-captura');
         const form = document.getElementById('form-webinar-mateus');
         const popupFormBody = document.getElementById('popup-form-body');
         const popupFormSuccess = document.getElementById('popup-form-success');
-
-        const CONFIG = {
-            webhook: form.dataset.webhook || 'https://hook.us2.make.com/6qaglponybteo2l6d187c5p91i7r1tae?produto=w-lex',
-            redirect: form.dataset.redirect || 'https://sndflw.com/i/webnar'
-        };
-
-        function isConfiguredUrl(url) {
-            return Boolean(url && !/SEU_|placeholder|example\.com/i.test(url));
-        }
+        const btnSubmitLead = document.getElementById('btn-submit-lead');
+        const telInput = form ? form.querySelector('.mask-telefone') : null;
 
         function abrirPopup() {
             resetarPopup();
@@ -716,10 +709,9 @@
         function resetarPopup() {
             popupFormBody.classList.remove('hidden');
             popupFormSuccess.classList.add('hidden');
-            const btnSubmit = form.querySelector('.btn-submit');
-            if (btnSubmit) {
-                btnSubmit.disabled = false;
-                btnSubmit.innerHTML = 'Garantir minha vaga';
+            if (btnSubmitLead) {
+                btnSubmitLead.disabled = false;
+                btnSubmitLead.textContent = 'Garantir minha vaga';
             }
         }
 
@@ -738,44 +730,43 @@
             if (urlEl) urlEl.value = window.location.href;
         }
 
-        preencherCamposTracking();
-
-        const telInput = form.querySelector('.mask-telefone');
-        telInput.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, '');
+        function aplicarMascaraTelefone(input) {
+            let value = input.value.replace(/\D/g, '');
             if (value.startsWith('55') && value.length > 2) value = value.slice(2);
             value = value.slice(0, 11);
             let formatado = value;
             if (value.length > 2) formatado = `(${value.slice(0, 2)}) ` + value.slice(2);
             if (value.length > 7) formatado = formatado.slice(0, 10) + '-' + formatado.slice(10);
-            e.target.value = formatado;
-            form.querySelector('.error-msg').classList.add('hidden');
-        });
+            input.value = formatado;
+            const errorMsg = form.querySelector('.error-msg');
+            if (errorMsg) errorMsg.classList.add('hidden');
+        }
 
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const btnSubmit = form.querySelector('.btn-submit');
+        function enviarLead() {
+            if (!form || !telInput || !btnSubmitLead) return;
+
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
             const errorMsg = form.querySelector('.error-msg');
             const telefoneFormatado = telInput.value.trim();
             const rawPhone = telefoneFormatado.replace(/\D/g, '');
 
             if (rawPhone.length < 10) {
-                errorMsg.classList.remove('hidden');
+                if (errorMsg) errorMsg.classList.remove('hidden');
                 telInput.focus();
                 return;
             }
 
-            btnSubmit.disabled = true;
-            btnSubmit.textContent = 'Processando...';
-
-            const nome = form.querySelector('[name="nome"]').value.trim();
-            const email = form.querySelector('[name="email"]').value.trim();
-            const telefone = '+55' + rawPhone;
+            btnSubmitLead.disabled = true;
+            btnSubmitLead.textContent = 'Processando...';
 
             const payload = {
-                nome: nome,
-                email: email,
-                telefone: telefone,
+                nome: form.querySelector('[name="nome"]').value.trim(),
+                email: form.querySelector('[name="email"]').value.trim(),
+                telefone: '+55' + rawPhone,
                 utm_source: document.getElementById('utm_source')?.value || '',
                 utm_term: document.getElementById('utm_term')?.value || '',
                 utm_campaign: document.getElementById('utm_campaign')?.value || '',
@@ -785,19 +776,43 @@
                 produto: 'w-lex'
             };
 
-            if (CONFIG.webhook) {
-                fetch(CONFIG.webhook, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload),
-                    keepalive: true
-                }).catch((err) => {
-                    console.error('Erro no envio do Webhook. Prosseguindo com redirect.', err);
-                });
-            }
+            const webhookUrl = form.dataset.webhook || WEBHOOK_URL;
+            const redirectUrl = form.dataset.redirect || REDIRECT_URL;
 
-            window.location.href = CONFIG.redirect;
-        });
+            fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                keepalive: true
+            }).catch((err) => {
+                console.error('Erro no envio do Webhook. Prosseguindo com redirect.', err);
+            });
+
+            window.location.replace(redirectUrl);
+        }
+
+        preencherCamposTracking();
+
+        if (telInput) {
+            telInput.addEventListener('input', function() {
+                aplicarMascaraTelefone(telInput);
+            });
+        }
+
+        if (btnSubmitLead) {
+            btnSubmitLead.addEventListener('click', enviarLead);
+        }
+
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                enviarLead();
+            });
+        }
+    </script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({ once: true, offset: 50, duration: 800 });
 
         if (window.matchMedia('(min-width: 1024px)').matches) {
             document.body.classList.add('custom-cursor');
