@@ -16,14 +16,16 @@ const EXPECTED = {
   webhook: 'https://hook.us2.make.com/6qaglponybteo2l6d187c5p91i7r1tae?produto=w-lex',
   redirect: 'https://sndflw.com/i/webnar',
   produto: 'w-lex',
-  canonical: 'https://webnarmateus.vercel.app/',
-  dashmonsterInit: 'matheus-ribeiro-a-nova-ordem-3hh33',
+  canonical: 'https://mateusribeirolider.com/',
 };
 
 const FORBIDDEN = [
   /personal\s*trainer\s*academy/i,
   /personaltraineracademy/i,
   /pos\.personaltraineracademy\.com/i,
+  /logoPTA/i,
+  /logoPta/i,
+  /instituto\s*valorize/i,
 ];
 
 function read(file) {
@@ -128,7 +130,9 @@ function testSourceHtmlIntegrity() {
   assert.ok(source.includes('onclick="abrirPopup()"'), 'botão popup ausente');
   assert.ok(source.includes('type="button" id="btn-submit-lead"'), 'botão deve ser type=button');
   assert.ok(source.includes('onsubmit="event.preventDefault();"'), 'preventDefault inline ausente');
-  assert.ok(source.includes(EXPECTED.dashmonsterInit), 'DashMonster ausente');
+  assert.ok(source.includes('GTM-NS6D89DC'), 'GTM ausente no HTML fonte');
+  assert.ok(source.includes('googletagmanager.com/gtm.js?id='), 'script GTM ausente no HTML fonte');
+  assert.ok(source.includes('googletagmanager.com/ns.html?id=GTM-NS6D89DC'), 'noscript GTM ausente no HTML fonte');
   assert.ok(source.includes("produto: 'w-lex'"), 'produto w-lex ausente no JS fonte');
   assert.ok(!source.includes('name="utm_source"'), 'campos hidden não devem ter name (evita GET na URL)');
   assertNoForbidden('index.html (fonte)', source);
@@ -189,10 +193,17 @@ function testDistStructure() {
   assert.ok(distJs.includes('location.replace'), 'redirect via location.replace ausente');
   assert.ok(distHtml.includes('js/main.min.js'), 'JS de produção não referenciado');
   assert.ok(distHtml.includes('css/main.min.css'), 'CSS de produção não referenciado');
-  assert.ok(distHtml.includes('assets/hero.webp'), 'hero.webp não referenciado');
+  assert.ok(distHtml.includes('assets/hero.webp'), 'hero.webp não referenciado (desktop)');
   assert.ok(distHtml.includes('assets/mateus.webp'), 'mateus.webp não referenciado');
+  assert.ok(
+    distHtml.includes('hero-mobile-visual md:hidden') && distHtml.includes('mateus.webp'),
+    'hero mobile deve usar mateus.webp'
+  );
   assert.ok(!distHtml.includes('cdn.tailwindcss.com'), 'Tailwind CDN ainda presente em produção');
-  assert.ok(distHtml.includes('dashmonster.com.br'), 'DashMonster ausente em produção');
+  assert.ok(!distHtml.includes('dashmonster'), 'DashMonster ainda presente em produção');
+  assert.ok(distHtml.includes('GTM-NS6D89DC'), 'GTM ausente em produção');
+  assert.ok(distHtml.includes('googletagmanager.com/gtm.js?id='), 'script GTM ausente em produção');
+  assert.ok(distHtml.includes('googletagmanager.com/ns.html?id=GTM-NS6D89DC'), 'noscript GTM ausente em produção');
   assertNoForbidden('dist/index.html', distHtml);
   assertNoForbidden('dist/js/main.min.js', distJs);
 

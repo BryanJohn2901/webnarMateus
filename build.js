@@ -12,7 +12,7 @@ const ROOT = __dirname;
 const DIST = path.join(ROOT, 'dist');
 const SOURCE_HTML = path.join(ROOT, 'index.html');
 
-const CANONICAL_URL = process.env.CANONICAL_URL || 'https://webnarmateus.vercel.app/';
+const CANONICAL_URL = process.env.CANONICAL_URL || 'https://mateusribeirolider.com/';
 const SITE_NAME = 'LEX';
 const PAGE_TITLE = 'Aula Gratuita | Mateus Ribeiro | LEX';
 const META_DESCRIPTION =
@@ -23,6 +23,9 @@ const FORBIDDEN_BRAND_PATTERNS = [
   /personal\s*trainer\s*academy/i,
   /personaltraineracademy/i,
   /pos\.personaltraineracademy\.com/i,
+  /logoPTA/i,
+  /logoPta/i,
+  /instituto\s*valorize/i,
 ];
 
 function log(step, message) {
@@ -63,13 +66,13 @@ function extractBetween(source, startTag, endTag) {
 function protectThirdPartyScripts(html) {
   const placeholders = [];
   const patterns = [
-    /<script async src="https:\/\/www\.dashmonster\.com\.br\/api\/tracking\/pixel\.js\?via=proxy"><\/script>/g,
-    /<script>window\.dmq=window\.dmq\|\|\[\];dmq\.push\(\[[\s\S]*?\]\);<\/script>/g,
+    /<!-- Google Tag Manager -->[\s\S]*?<!-- End Google Tag Manager -->/g,
+    /<!-- Google Tag Manager \(noscript\) -->[\s\S]*?<!-- End Google Tag Manager \(noscript\) -->/g,
   ];
 
   patterns.forEach((pattern) => {
     html = html.replace(pattern, (match) => {
-      const token = `<!--__THIRD_PARTY_SCRIPT_${placeholders.length}__-->`;
+      const token = `__THIRD_PARTY_SCRIPT_${placeholders.length}__`;
       placeholders.push(match);
       return token;
     });
@@ -80,7 +83,7 @@ function protectThirdPartyScripts(html) {
 
 function restoreThirdPartyScripts(html, placeholders) {
   placeholders.forEach((block, index) => {
-    html = html.replace(`<!--__THIRD_PARTY_SCRIPT_${index}__-->`, block);
+    html = html.replace(`__THIRD_PARTY_SCRIPT_${index}__`, block);
   });
   return html;
 }
@@ -96,9 +99,10 @@ function injectSeoAndPerformance(html) {
     <meta name="twitter:title" content="${PAGE_TITLE}">
     <meta name="twitter:description" content="${META_DESCRIPTION}">
     <meta name="twitter:image" content="${OG_IMAGE}">
-    <link rel="preconnect" href="https://www.dashmonster.com.br" crossorigin>
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://unpkg.com" crossorigin>
+    <link rel="dns-prefetch" href="https://www.google-analytics.com">
     <link rel="dns-prefetch" href="https://hook.us2.make.com">
     <link rel="dns-prefetch" href="https://sndflw.com">`;
 
@@ -139,8 +143,8 @@ function fixAccessibility(html) {
       'src="assets/hero.webp" alt="Mateus Ribeiro apresentando aula gratuita sobre liderança e posicionamento" class="hero-bg-img'
     )
     .replace(
-      'src="assets/hero.png" alt="" loading="eager"',
-      'src="assets/hero.webp" alt="Mateus Ribeiro apresentando aula gratuita sobre liderança e posicionamento" loading="eager"'
+      'src="assets/mateus.png" alt="Mateus Ribeiro, mentor e treinador de líderes" loading="eager"',
+      'src="assets/mateus.webp" alt="Mateus Ribeiro, mentor e treinador de líderes" loading="eager"'
     )
     .replace(
       'src="assets/mateus.png" alt="Mateus Ribeiro"',
@@ -291,8 +295,11 @@ function transformHtml(sourceHtml, imageMap) {
     html = html.split(from).join(to);
   }
 
-  html = restoreThirdPartyScripts(html, protectedScripts.placeholders);
-  return { html, customCssPath };
+  return {
+    html,
+    customCssPath,
+    thirdPartyPlaceholders: protectedScripts.placeholders,
+  };
 }
 
 async function main() {
@@ -306,7 +313,7 @@ async function main() {
   assertNoForbiddenBrands('index.html (fonte)', sourceHtml);
 
   const imageMap = await copyAssets();
-  const { html: transformedHtml, customCssPath } = transformHtml(sourceHtml, imageMap);
+  const { html: transformedHtml, customCssPath, thirdPartyPlaceholders } = transformHtml(sourceHtml, imageMap);
 
   log('css', 'compilando Tailwind purgado');
   const tailwindPath = compileTailwind(customCssPath);
@@ -320,7 +327,7 @@ async function main() {
   await buildJavaScript(sourceHtml, imageMap);
 
   log('html', 'minificando index.html');
-  const minifiedHtml = await minifyHtml(transformedHtml, {
+  let minifiedHtml = await minifyHtml(transformedHtml, {
     collapseWhitespace: true,
     removeComments: true,
     removeRedundantAttributes: true,
@@ -331,6 +338,8 @@ async function main() {
     minifyJS: false,
     keepClosingSlash: true,
   });
+
+  minifiedHtml = restoreThirdPartyScripts(minifiedHtml, thirdPartyPlaceholders);
 
   const distHtmlPath = path.join(DIST, 'index.html');
   fs.writeFileSync(distHtmlPath, minifiedHtml);

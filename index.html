@@ -13,8 +13,13 @@
     <meta property="og:locale" content="pt_BR">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>%F0%9F%8E%A4</text></svg>">
 
-    <script async src="https://www.dashmonster.com.br/api/tracking/pixel.js?via=proxy"></script>
-    <script>window.dmq=window.dmq||[];dmq.push(["init","matheus-ribeiro-a-nova-ordem-3hh33","4dadb4453055"]);</script>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-NS6D89DC');</script>
+    <!-- End Google Tag Manager -->
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
@@ -272,6 +277,10 @@
     </style>
 </head>
 <body class="bg-brand-bg text-brand-textPrimary font-sans antialiased selection:bg-brand-primary selection:text-brand-bg">
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NS6D89DC"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
 
     <div class="cursor-dot hidden lg:block" aria-hidden="true"></div>
     <div class="cursor-ring hidden lg:block" aria-hidden="true"></div>
@@ -287,7 +296,7 @@
         <div class="hidden md:block absolute bottom-1/4 -right-32 w-80 h-80 bg-amber-600/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
 
         <div class="hero-mobile-visual md:hidden relative bg-brand-bg">
-            <img src="assets/hero.png" alt="" loading="eager">
+            <img src="assets/mateus.png" alt="Mateus Ribeiro, mentor e treinador de líderes" loading="eager">
             <div class="hero-mobile-fade" aria-hidden="true"></div>
         </div>
 
@@ -685,6 +694,15 @@
         const popupFormSuccess = document.getElementById('popup-form-success');
         const btnSubmitLead = document.getElementById('btn-submit-lead');
         const telInput = form ? form.querySelector('.mask-telefone') : null;
+        let enviandoLead = false;
+
+        function redirecionarSeguro(url) {
+            try {
+                window.location.replace(url);
+            } catch (err) {
+                window.location.href = url;
+            }
+        }
 
         function abrirPopup() {
             resetarPopup();
@@ -743,7 +761,7 @@
         }
 
         function enviarLead() {
-            if (!form || !telInput || !btnSubmitLead) return;
+            if (!form || !telInput || !btnSubmitLead || enviandoLead) return;
 
             if (!form.checkValidity()) {
                 form.reportValidity();
@@ -760,6 +778,7 @@
                 return;
             }
 
+            enviandoLead = true;
             btnSubmitLead.disabled = true;
             btnSubmitLead.textContent = 'Processando...';
 
@@ -779,16 +798,20 @@
             const webhookUrl = form.dataset.webhook || WEBHOOK_URL;
             const redirectUrl = form.dataset.redirect || REDIRECT_URL;
 
-            fetch(webhookUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-                keepalive: true
-            }).catch((err) => {
-                console.error('Erro no envio do Webhook. Prosseguindo com redirect.', err);
-            });
-
-            window.location.replace(redirectUrl);
+            try {
+                fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                    keepalive: true
+                }).catch((err) => {
+                    console.error('Erro no envio do Webhook. Prosseguindo com redirect.', err);
+                });
+            } catch (err) {
+                console.error('Erro ao disparar webhook. Prosseguindo com redirect.', err);
+            } finally {
+                redirecionarSeguro(redirectUrl);
+            }
         }
 
         preencherCamposTracking();
@@ -800,14 +823,19 @@
         }
 
         if (btnSubmitLead) {
-            btnSubmitLead.addEventListener('click', enviarLead);
+            btnSubmitLead.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                enviarLead();
+            }, true);
         }
 
         if (form) {
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
+                e.stopPropagation();
                 enviarLead();
-            });
+            }, true);
         }
     </script>
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
